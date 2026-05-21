@@ -120,7 +120,7 @@ function MainApp() {
 
           const token =
             localStorage.getItem(
-              'trackhire_token'
+              'trackhireToken'
             );
 
           const jobsRes =
@@ -171,14 +171,13 @@ function MainApp() {
   const handleTogglePin =
     async (id) => {
 
-      console.log("PIN CLICKED:", id);
       try {
 
         setPinningId(id);
 
         const token =
           localStorage.getItem(
-            'trackhire_token'
+            'trackhireToken'
           );
 
         const job =
@@ -236,7 +235,7 @@ function MainApp() {
 
         const token =
           localStorage.getItem(
-            'trackhire_token'
+            'trackhireToken'
           );
 
         const res =
@@ -289,7 +288,7 @@ function MainApp() {
 
         const token =
           localStorage.getItem(
-            'trackhire_token'
+            'trackhireToken'
           );
 
         const res =
@@ -357,7 +356,7 @@ function MainApp() {
 
         const token =
           localStorage.getItem(
-            'trackhire_token'
+            'trackhireToken'
           );
 
         await axios.delete(
@@ -425,7 +424,7 @@ function MainApp() {
 
         const token =
           localStorage.getItem(
-            'trackhire_token'
+            'trackhireToken'
           );
 
         const res =
@@ -477,7 +476,7 @@ function MainApp() {
 
         const token =
           localStorage.getItem(
-            'trackhire_token'
+            'trackhireToken'
           );
 
         await axios.delete(
@@ -555,13 +554,17 @@ function MainApp() {
           <Routes>
 
             <Route
-              path="/"
-              element={
-                <Dashboard
-                  jobs={jobs}
-                />
-              }
-            />
+  path="/"
+  element={
+    <ProtectedRoute>
+
+      <Dashboard
+        jobs={jobs}
+      />
+
+    </ProtectedRoute>
+  }
+/>
 
             <Route
               path="/login"

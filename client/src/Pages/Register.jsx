@@ -152,24 +152,65 @@ export default function Register() {
   // ─────────────────────────────────────────────
   // HANDLE CHANGE
   // ─────────────────────────────────────────────
-  const handleChange = (e) => {
+// ─────────────────────────────────────────────
+// HANDLE CHANGE
+// ─────────────────────────────────────────────
+const handleChange = (e) => {
 
-    const { name, value } =
-      e.target;
+  const { name, value } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  setFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
 
-    if (errors[name]) {
+  // CLEAR OLD ERROR
+  setErrors((prev) => ({
+    ...prev,
+    [name]: '',
+  }));
+
+  // REAL-TIME CONFIRM PASSWORD VALIDATION
+  if (name === 'confirmPassword') {
+
+    if (value !== formData.password) {
 
       setErrors((prev) => ({
         ...prev,
-        [name]: '',
+        confirmPassword: 'Passwords do not match',
+      }));
+
+    } else {
+
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword: '',
       }));
     }
-  };
+  }
+
+  // ALSO CHECK WHEN USER CHANGES MAIN PASSWORD
+  if (name === 'password') {
+
+    if (
+      formData.confirmPassword &&
+      value !== formData.confirmPassword
+    ) {
+
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword: 'Passwords do not match',
+      }));
+
+    } else {
+
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword: '',
+      }));
+    }
+  }
+};
 
   // ─────────────────────────────────────────────
   // VALIDATE FORM
@@ -322,15 +363,29 @@ export default function Register() {
 
         if (!response.ok) {
 
-          alert(
-            data.message ||
-            'Registration failed'
-          );
+  // EMAIL ALREADY EXISTS
+  if (
+    data.msg === 'User already exists'
+  ) {
 
-          setIsSubmitting(false);
+    setErrors((prev) => ({
+      ...prev,
+      email:
+        'This email is already registered',
+    }));
 
-          return;
-        }
+  } else {
+
+    alert(
+      data.msg ||
+      'Registration failed'
+    );
+  }
+
+  setIsSubmitting(false);
+
+  return;
+}
 
         setSubmitStatus(
           'success'
@@ -657,6 +712,17 @@ export default function Register() {
 
                   </p>
                 )}
+                {errors.email && (
+
+                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+
+                    <AlertCircle size={14} />
+
+    {errors.email}
+
+  </p>
+
+)}
 
               </div>
 
@@ -924,6 +990,30 @@ export default function Register() {
                   />
 
                 </div>
+                {errors.confirmPassword && (
+
+  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+
+    <AlertCircle size={14} />
+
+    {errors.confirmPassword}
+
+  </p>
+
+)}
+
+{formData.confirmPassword &&
+ formData.password === formData.confirmPassword && (
+
+  <p className="mt-1 text-xs text-green-600 flex items-center gap-1">
+
+    <Check size={14} />
+
+    Passwords match
+
+  </p>
+
+)}
 
               </div>
 
