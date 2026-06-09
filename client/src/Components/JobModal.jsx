@@ -6,7 +6,7 @@ import Loader from './Loader';
 export default function JobModal({ isOpen, onClose, onSubmit, initialData = null, isSaving }) {
   const [formData, setFormData] = useState({
     company: '', role: '', location: 'Remote', jobType: 'Full-time', 
-    hrName: '', status: 'Applied', dateApplied: new Date().toISOString().split('T')[0], 
+    hrName: '', status: 'Applied', dateApplied: new Date().toISOString().split('T')[0], interviewDate: '',
     resumeName: '', referralUsed: false, referrerName: '', referrerRole: '',
     platformType: 'Website', platformName: ''
   });
@@ -20,7 +20,7 @@ export default function JobModal({ isOpen, onClose, onSubmit, initialData = null
     } else {
       setFormData({
         company: '', role: '', location: 'Remote', jobType: 'Full-time', 
-        hrName: '', status: 'Applied', dateApplied: new Date().toISOString().split('T')[0], 
+        hrName: '', status: 'Applied', dateApplied: new Date().toISOString().split('T')[0], interviewDate: '',
         resumeName: '', referralUsed: false, referrerName: '', referrerRole: '',
         platformType: 'Website', platformName: ''
       });
@@ -169,6 +169,26 @@ export default function JobModal({ isOpen, onClose, onSubmit, initialData = null
                   />
                 </div>
               </div>
+
+              {formData.status === 'Interview' && (
+  <div className="space-y-1">
+    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+      Interview Date
+    </label>
+
+    <input
+      type="date"
+      value={formData.interviewDate}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          interviewDate: e.target.value
+        })
+      }
+      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl"
+    />
+  </div>
+)}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">

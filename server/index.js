@@ -37,6 +37,11 @@ app.use(
   require('./routes/trash')
 );
 
+app.use(
+  '/api/gemini',
+  require('./routes/gemini')
+);
+
 // TEST ROUTE
 app.get('/', (req, res) => {
 

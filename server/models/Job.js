@@ -39,6 +39,11 @@ const JobSchema = new mongoose.Schema({
     required: true
   },
 
+  interviewDate: {
+  type: String,
+  default: ''
+},
+
   resumeName: {
     type: String,
     default: ''

@@ -1,7 +1,9 @@
 // src/Pages/Dashboard.jsx
 
+import axios from 'axios';
 import React, {
-  useMemo
+  useMemo,
+  useState
 } from 'react';
 
 import {
@@ -34,6 +36,9 @@ export default function Dashboard({
   const navigate =
     useNavigate();
 
+  const [generatedEmail, setGeneratedEmail] =
+  useState('');
+
   // ─────────────────────────────────────────────
   // LOGIN CHECK
   // ─────────────────────────────────────────────
@@ -45,6 +50,57 @@ export default function Dashboard({
 
   const isLoggedIn =
     !!token;
+
+  const generateFollowUpEmail =
+  async (job) => {
+
+    try {
+
+      const token =
+        localStorage.getItem(
+          'trackhireToken'
+        );
+
+      const res =
+        await axios.post(
+
+          'http://localhost:5000/api/gemini/followup',
+
+          {
+            company:
+              job.company,
+
+            role:
+              job.role,
+
+            status:
+              job.status,
+
+            daysWaiting:
+              job.daysWaiting
+          },
+
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+
+      setGeneratedEmail(
+        res.data.email
+      );
+
+    } catch (err) {
+
+      console.log(err);
+
+      alert(
+        'Failed to generate email'
+      );
+    }
+  };
 
   // ─────────────────────────────────────────────
   // GENERAL STATS
@@ -99,86 +155,81 @@ export default function Dashboard({
       const today =
         new Date();
 
-      const upcomingInterviews =
-        jobs.filter(
-          (j) =>
-            j.status ===
-            'Interview'
+const upcomingInterviews = jobs.filter((job) => {
+
+  if (job.status !== 'Interview') {
+    return false;
+  }
+
+  const jobDate = new Date(job.dateApplied);
+  const today = new Date();
+
+  jobDate.setHours(0,0,0,0);
+  today.setHours(0,0,0,0);
+
+  return jobDate >= today;
+});
+
+const followUpsNeeded =
+  jobs
+    .filter((j) => {
+
+      if (
+        ![
+          'Applied',
+          'Screening',
+          'Interview'
+        ].includes(j.status)
+      ) {
+        return false;
+      }
+
+      const referenceDate =
+        new Date(j.dateApplied);
+
+      // Don't show future dates
+      if (referenceDate > today) {
+        return false;
+      }
+
+      const diffDays =
+        Math.floor(
+          (today - referenceDate) /
+          (1000 * 60 * 60 * 24)
         );
 
-      const followUpsNeeded =
-        jobs
-          .filter((j) => {
+      return diffDays >= 7;
+    })
 
-            if (
-              j.status !==
-              'Applied'
-            )
-              return false;
+    .map((j) => {
 
-            const appliedDate =
-              new Date(
-                j.dateApplied
-              );
+      const referenceDate =
+        new Date(j.dateApplied);
 
-            const diffTime =
-              Math.abs(
-                today -
-                appliedDate
-              );
-
-            const diffDays =
-              Math.ceil(
-                diffTime /
-                (1000 *
-                  60 *
-                  60 *
-                  24)
-              );
-
-            return (
-              diffDays >= 7
-            );
-          })
-
-          .map((j) => {
-
-            const appliedDate =
-              new Date(
-                j.dateApplied
-              );
-
-            const diffDays =
-              Math.ceil(
-                Math.abs(
-                  today -
-                  appliedDate
-                ) /
-                (1000 *
-                  60 *
-                  60 *
-                  24)
-              );
-
-            return {
-              ...j,
-              daysWaiting:
-                diffDays,
-            };
-          })
-
-          .sort(
-            (a, b) =>
-              b.daysWaiting -
-              a.daysWaiting
-          );
+      const diffDays =
+        Math.floor(
+          (today - referenceDate) /
+          (1000 * 60 * 60 * 24)
+        );
 
       return {
-        upcomingInterviews,
-        followUpsNeeded,
+        ...j,
+        daysWaiting: diffDays,
       };
+    })
 
-    }, [jobs]);
+    .sort(
+      (a, b) =>
+        b.daysWaiting -
+        a.daysWaiting
+    );
+
+    return {
+  upcomingInterviews,
+  followUpsNeeded,
+};
+
+}, [jobs]);
 
   return (
 
@@ -560,17 +611,20 @@ export default function Dashboard({
                             <div>
 
                               <h4 className="font-bold text-gray-900 text-base">
+  {job.company}
+</h4>
 
-                                {job.company}
+<p className="text-sm text-gray-500 mt-0.5">
+  {job.role}
+</p>
 
-                              </h4>
-
-                              <p className="text-sm text-gray-500 mt-0.5">
-
-                                {job.role}
-
-                              </p>
-
+{job.interviewDate && (
+  <p className="text-xs text-yellow-600 font-semibold mt-1">
+    Interview:
+    {' '}
+    {job.interviewDate}
+  </p>
+)}
                             </div>
 
                             <button className="h-10 w-10 bg-yellow-50 text-yellow-600 rounded-full flex items-center justify-center">
@@ -663,21 +717,30 @@ export default function Dashboard({
 
                             <div>
 
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
 
-                                <h4 className="font-bold text-gray-900 text-base">
+  <h4 className="font-bold text-gray-900 text-base">
+    {job.company}
+  </h4>
 
-                                  {job.company}
+  <span
+    className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border
+      ${
+        job.status === 'Applied'
+          ? 'bg-blue-50 text-blue-600 border-blue-100'
+          : job.status === 'Screening'
+          ? 'bg-purple-50 text-purple-600 border-purple-100'
+          : 'bg-yellow-50 text-yellow-600 border-yellow-100'
+      }`}
+  >
+    {job.status}
+  </span>
 
-                                </h4>
+  <span className="text-[10px] uppercase tracking-wider font-bold bg-rose-50 text-rose-600 px-2 py-0.5 rounded-md border border-rose-100">
+    {job.daysWaiting} Days Ago
+  </span>
 
-                                <span className="text-[10px] uppercase tracking-wider font-bold bg-rose-50 text-rose-600 px-2 py-0.5 rounded-md border border-rose-100">
-
-                                  {job.daysWaiting} Days Ago
-
-                                </span>
-
-                              </div>
+</div>
 
                               <p className="text-sm text-gray-500 mt-0.5">
 
@@ -687,13 +750,14 @@ export default function Dashboard({
 
                             </div>
 
-                            <button className="h-10 w-10 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center">
-
-                              <ArrowUpRight
-                                size={18}
-                              />
-
-                            </button>
+                            <button
+  onClick={() =>
+    generateFollowUpEmail(job)
+  }
+  className="h-10 w-10 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center"
+>
+  <ArrowUpRight size={18} />
+</button>
 
                           </div>
                         )
@@ -712,6 +776,55 @@ export default function Dashboard({
 
         </>
       )}
+      {
+  generatedEmail && (
+
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+
+      <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4">
+
+        <h3 className="text-xl font-bold mb-4">
+
+          AI Generated Follow-up Email
+
+        </h3>
+
+        <textarea
+          value={generatedEmail}
+          readOnly
+          rows={12}
+          className="w-full border p-3 rounded-lg"
+        />
+
+        <div className="flex gap-3 mt-4">
+
+          <button
+            onClick={() =>
+              navigator.clipboard.writeText(
+                generatedEmail
+              )
+            }
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg"
+          >
+            Copy
+          </button>
+
+          <button
+            onClick={() =>
+              setGeneratedEmail('')
+            }
+            className="px-4 py-2 bg-gray-200 rounded-lg"
+          >
+            Close
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+  )
+}
 
     </div>
   );
